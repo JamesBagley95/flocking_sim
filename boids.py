@@ -13,16 +13,19 @@ import numpy as np
 import math as maths
 #https://www.red3d.com/cwr/boids/
 def calcAvePos(boidsList):
+	averageFlockPosX = 0
+	averageFlockPosY = 0
 	for i in boidsList:
 		averageFlockPosX = averageFlockPosX + i.coord.x
 		averageFlockPosY = averageFlockPosY + i.coord.y
 	averageFlockPosX = averageFlockPosX/len(	boidsList)
-	self.averageFlockPosY = self.averageFlockPosY/len(self.boidsList)
-	self.averageFlockCoord = Vector(self.averageFlockPosX,self.averageFlockPosY)
-	print(self.averageFlockPosY)
+	averageFlockPosY = averageFlockPosY/len(boidsList)
+	averageFlockCoord = Vector(averageFlockPosX,averageFlockPosY)
+	return averageFlockCoord
+	print(averageFlockPosY)
 class BoidsWindow(QDialog):
-	windowSizeX = 1000
-	windowSizeY = 1000
+	windowSizeX = 600
+	windowSizeY = 600
 	boidViewingDistance = 100
 	numBoids = 100
 	def __init__(self):
@@ -54,12 +57,9 @@ class BoidsWindow(QDialog):
 		timer.timeout.connect(self.update)
 		timer.start(100)
 	def update(self):
-		self.calcAveFlockPos()
 		for i in self.boidsList:
-			i.update(self.averageFlockCoord,self.boidsList)
+			i.update(self.boidsList)
 
-	def calcAveFlockPos(self):
-		
 
 class Boid():
 	def __init__(self,coord,parentWindow):
@@ -75,28 +75,42 @@ class Boid():
 		if self.coord.y > BoidsWindow.windowSizeY:
 			self.coord.y = self.coord.y - 1000
 		self.dotLabel.move(x,y)
-	def update(self, aveFlockPos, boidsList):
-		self.aveFlockPos = aveFlockPos
+	def update(self, boidsList):
+		
 		self.boidsList = boidsList
 		self.getViewableBoids(self.boidsList)
+		self.aveNeibourhoodPos = calcAvePos(self.viewableBoidsList)
 		self.calcSeperation()
 		self.calcAlignment()
 			
 		self.calcCohesion()
+		self.addRand()
 		self.move(self.coord.x,self.coord.y)
 	def calcSeperation(self):
-		pass
+		aveNeibourhoodPos = calcAvePos(self.viewableBoidsList)
+		angleAwayFromNeighbourhood = self.calcAngleToNeighbours() +maths.pi
+		self.coord.x = self.coord.x + (1*np.cos(angleAwayFromNeighbourhood))
+		self.coord.y = self.coord.y + (1*np.sin(angleAwayFromNeighbourhood))
+		print("angle away is " + str(angleAwayFromNeighbourhood))
+	def addRand(self):
+		self.coord.x = self.coord.x + randint(-10 ,10)/10
+		self.coord.y = self.coord.y + randint(-10 ,10)/10
 	def calcAlignment(self):
 		angle = 0
 		for i in self.viewableBoidsList:
 			angle = angle +i.coord.getDir()
 		self.aveDirAngle = angle
 
-		self.coord.x = self.coord.x + (5*np.cos(self.aveDirAngle))
-		self.coord.y = self.coord.y + (5*np.sin(self.aveDirAngle))
-		
+		self.coord.x = self.coord.x + (1*np.cos(self.aveDirAngle))
+		self.coord.y = self.coord.y + (1*np.sin(self.aveDirAngle))
+	def calcAngleToNeighbours(self):
+		angleToNeighbourhood = maths.atan2(self.aveNeibourhoodPos.y - self.coord.y, self.aveNeibourhoodPos.x - self.coord.x)
+		return angleToNeighbourhood
 	def calcCohesion(self):
-		pass
+		angleToNeighbourhood = self.calcAngleToNeighbours()
+		self.coord.x = self.coord.x + (2*np.cos(angleToNeighbourhood))
+		self.coord.y = self.coord.y + (2*np.sin(angleToNeighbourhood))
+		print("angle to is " + str(angleToNeighbourhood))
 	def getViewableBoids(self, boidsList):
 		for i in boidsList:
 			xDiff = self.coord.x - i.coord.x
